@@ -3,7 +3,7 @@ package io.hatefulbug.library.producer.controller;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import io.hatefulbug.library.producer.model.LibraryEvent;
 import io.hatefulbug.library.producer.model.LibraryEventType;
-import io.hatefulbug.library.producer.template.LibraryEventProducer;
+import io.hatefulbug.library.producer.service.LibraryEventProducer;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

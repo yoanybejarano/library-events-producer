@@ -1,4 +1,4 @@
-package io.hatefulbug.library.producer.template;
+package io.hatefulbug.library.producer.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import io.hatefulbug.library.producer.model.LibraryEvent;
@@ -18,6 +18,8 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import static io.hatefulbug.library.producer.util.TopicsRepo.LIBRARY_TOPIC;
+
 @Component
 @Slf4j
 @RequiredArgsConstructor
@@ -30,7 +32,7 @@ public class LibraryEventProducer {
             libraryEvent.setLibraryEventId(UUID.randomUUID());
         }
         String key = libraryEvent.getLibraryEventId().toString();
-        CompletableFuture<SendResult<String, LibraryEvent>> completableFuture = kafkaTemplate.send("library_event", key, libraryEvent);
+        CompletableFuture<SendResult<String, LibraryEvent>> completableFuture = kafkaTemplate.send(LIBRARY_TOPIC, key, libraryEvent);
         completableFuture.whenComplete((result, ex) -> {
             if (ex != null) {
                 handleFailure(ex);
@@ -47,7 +49,7 @@ public class LibraryEventProducer {
         String key = libraryEvent.getLibraryEventId().toString();
         SendResult<String, LibraryEvent> sendResult = null;
         try {
-            sendResult = kafkaTemplate.send("library_event", key, libraryEvent).get(1, TimeUnit.SECONDS);
+            sendResult = kafkaTemplate.send(LIBRARY_TOPIC, key, libraryEvent).get(1, TimeUnit.SECONDS);
         } catch (ExecutionException | InterruptedException e) {
             log.error("ExecutionException/InterruptedException Sending the Message and the exception is {}", e.getMessage());
             throw e;
@@ -64,7 +66,7 @@ public class LibraryEventProducer {
             libraryEvent.setLibraryEventId(UUID.randomUUID());
         }
         String key = libraryEvent.getLibraryEventId().toString();
-        ProducerRecord<String, LibraryEvent> producerRecord = buildProducerRecord(key, libraryEvent, "library_events");
+        ProducerRecord<String, LibraryEvent> producerRecord = buildProducerRecord(key, libraryEvent, LIBRARY_TOPIC);
         CompletableFuture<SendResult<String, LibraryEvent>> completableFuture =  kafkaTemplate.send(producerRecord);
         completableFuture.whenComplete((result, ex) -> {
             if (ex != null) {
