@@ -1,0 +1,16 @@
+spring:
+  application:
+    name: library-events-producer
+  profiles:
+    active: local
+  kafka:
+    producer:
+      bootstrap-servers: localhost:9092
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      properties:
+        # This helps the consumer know what class it's looking at
+        spring.json.add.type.headers: true
+    admin:
+      properties:
+        bootstrap.servers: localhost:9092
