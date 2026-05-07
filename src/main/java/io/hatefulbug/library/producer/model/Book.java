@@ -1,10 +1,8 @@
 package io.hatefulbug.library.producer.model;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-
+import lombok.*;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import java.util.UUID;
 
 @AllArgsConstructor
@@ -12,7 +10,10 @@ import java.util.UUID;
 @Data
 @Builder
 public class Book {
+    @NotNull
     private UUID bookId;
+    @NotBlank
     private String title;
+    @NotBlank
     private String author;
 }
