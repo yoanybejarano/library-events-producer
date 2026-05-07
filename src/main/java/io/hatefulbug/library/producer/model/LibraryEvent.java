@@ -1,10 +1,8 @@
 package io.hatefulbug.library.producer.model;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
+import lombok.*;
 import java.util.UUID;
 
 @AllArgsConstructor
@@ -14,5 +12,7 @@ import java.util.UUID;
 public class LibraryEvent {
     private UUID libraryEventId;
     private LibraryEventType libraryEventType;
+    @NotNull
+    @Valid
     private Book book;
 }

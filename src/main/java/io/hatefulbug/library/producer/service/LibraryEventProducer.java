@@ -1,6 +1,5 @@
 package io.hatefulbug.library.producer.service;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import io.hatefulbug.library.producer.model.LibraryEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -60,7 +59,7 @@ public class LibraryEventProducer {
         return sendResult;
     }
 
-    public CompletableFuture<SendResult<String, LibraryEvent>> sendLibraryEvent_Approach2(LibraryEvent libraryEvent) throws JsonProcessingException {
+    public CompletableFuture<SendResult<String, LibraryEvent>> sendLibraryEvent_Approach2(LibraryEvent libraryEvent) {
 
         if (libraryEvent.getLibraryEventId() == null) {
             libraryEvent.setLibraryEventId(UUID.randomUUID());
