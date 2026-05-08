@@ -6,13 +6,14 @@ on:
   pull_request:
     branches: [ master ]
 
-# We can remove the FORCE variable now if we use the absolute latest tags
 jobs:
   lint:
     name: Code Quality (Checkstyle/PMD)
     runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     steps:
-      - uses: actions/checkout@v4.1.7 # Using a specific minor tag often clears the metadata warning
+      - uses: actions/checkout@v4
       - name: Set up JDK 21
         uses: actions/setup-java@v5
         with:
@@ -25,8 +26,10 @@ jobs:
   security:
     name: Security Scan (SpotBugs/Snyk)
     runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     steps:
-      - uses: actions/checkout@v4.1.7
+      - uses: actions/checkout@v4
       - name: Set up JDK 21
         uses: actions/setup-java@v5
         with:
@@ -39,8 +42,10 @@ jobs:
     name: Unit & Integration Tests
     needs: [lint, security]
     runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     steps:
-      - uses: actions/checkout@v4.1.7
+      - uses: actions/checkout@v4
       - name: Set up JDK 21
         uses: actions/setup-java@v5
         with:
@@ -54,8 +59,10 @@ jobs:
     name: Package JAR
     needs: [test]
     runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     steps:
-      - uses: actions/checkout@v4.1.7
+      - uses: actions/checkout@v4
       - name: Set up JDK 21
         uses: actions/setup-java@v5
         with:
