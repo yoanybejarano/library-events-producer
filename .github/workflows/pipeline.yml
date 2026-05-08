@@ -7,7 +7,7 @@ on:
     branches: [ master ]
 
 env:
-  # This tells GitHub to use Node 24 immediately and silences the deprecation warning
+  # This tells GitHub to use Node 24 immediately
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
@@ -16,10 +16,10 @@ jobs:
 
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v6 # Updated from v4
+        uses: actions/checkout@v4 # v4 is already updated for Node 24 compatibility
 
       - name: Set up JDK 21
-        uses: actions/setup-java@v6 # Updated from v4
+        uses: actions/setup-java@v5 # This is the version that officially moved to Node 24
         with:
           java-version: '21'
           distribution: 'oracle'
@@ -30,7 +30,7 @@ jobs:
 
       - name: Upload Analysis Reports
         if: failure()
-        uses: actions/upload-artifact@v6 # Updated from v4
+        uses: actions/upload-artifact@v7 # Use v7 to resolve the Node 20 deprecation
         with:
           name: quality-reports
           path: |
