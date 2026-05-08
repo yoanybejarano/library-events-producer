@@ -33,6 +33,7 @@
 		<maven-pmd-plugin.version>3.26.0</maven-pmd-plugin.version>
 		<spotbugs-maven-plugin.version>4.8.6.6</spotbugs-maven-plugin.version>
 		<jacoco-maven-plugin.version>0.8.12</jacoco-maven-plugin.version>
+		<owasp-maven-plugin-version>12.1.0</owasp-maven-plugin-version>
 	</properties>
 	<dependencies>
 		<dependency>
@@ -149,6 +150,24 @@
 						<phase>test</phase>
 						<goals>
 							<goal>report</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.owasp</groupId>
+				<artifactId>dependency-check-maven</artifactId>
+				<version>${owasp-maven-plugin-version}</version>
+
+				<configuration>
+					<format>HTML</format>
+					<failBuildOnCVSS>7</failBuildOnCVSS>
+				</configuration>
+
+				<executions>
+					<execution>
+						<goals>
+							<goal>check</goal>
 						</goals>
 					</execution>
 				</executions>
