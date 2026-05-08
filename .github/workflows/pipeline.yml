@@ -6,16 +6,13 @@ on:
   pull_request:
     branches: [ master ]
 
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-
+# We can remove the FORCE variable now if we use the absolute latest tags
 jobs:
-  # STAGE 1: Code Quality & Linting
   lint:
     name: Code Quality (Checkstyle/PMD)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4.1.7 # Using a specific minor tag often clears the metadata warning
       - name: Set up JDK 21
         uses: actions/setup-java@v5
         with:
@@ -25,12 +22,11 @@ jobs:
       - name: Run Static Analysis
         run: mvn checkstyle:check pmd:check
 
-  # STAGE 2: Security & Vulnerabilities
   security:
     name: Security Scan (SpotBugs/Snyk)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4.1.7
       - name: Set up JDK 21
         uses: actions/setup-java@v5
         with:
@@ -39,47 +35,31 @@ jobs:
       - name: SpotBugs Scan
         run: mvn spotbugs:check
 
-  # STAGE 3: Unit & Integration Testing
   test:
     name: Unit & Integration Tests
-    needs: [lint, security] # Only runs if Stage 1 & 2 pass
+    needs: [lint, security]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4.1.7
       - name: Set up JDK 21
         uses: actions/setup-java@v5
         with:
           java-version: '21'
           distribution: 'oracle'
           cache: 'maven'
-
-      # Since this is a Kafka Producer, we use verify to trigger integration tests
       - name: Run Tests with JaCoCo
         run: mvn clean verify
 
-      - name: Upload Coverage Report
-        uses: actions/upload-artifact@v7
-        with:
-          name: jacoco-report
-          path: target/site/jacoco/
-
-  # STAGE 4: Package & Artifact Creation
   package:
     name: Package JAR
     needs: [test]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4.1.7
       - name: Set up JDK 21
         uses: actions/setup-java@v5
         with:
           java-version: '21'
           distribution: 'oracle'
       - name: Build Final JAR
-        run: mvn package -DskipTests # Tests already passed in Stage 3
-
-      - name: Upload Build Artifact
-        uses: actions/upload-artifact@v7
-        with:
-          name: library-events-producer-jar
-          path: target/*.jar
+        run: mvn package -DskipTests
