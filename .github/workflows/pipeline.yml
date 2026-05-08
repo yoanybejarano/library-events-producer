@@ -1,4 +1,4 @@
-name: Java CI with Quality Gates
+name: Enterprise Java CI/CD
 
 on:
   push:
@@ -7,34 +7,79 @@ on:
     branches: [ master ]
 
 env:
-  # This tells GitHub to use Node 24 immediately
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
-  build-and-analyze:
+  # STAGE 1: Code Quality & Linting
+  lint:
+    name: Code Quality (Checkstyle/PMD)
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4 # v4 is already updated for Node 24 compatibility
-
+      - uses: actions/checkout@v4
       - name: Set up JDK 21
-        uses: actions/setup-java@v5 # This is the version that officially moved to Node 24
+        uses: actions/setup-java@v5
+        with:
+          java-version: '21'
+          distribution: 'oracle'
+          cache: 'maven'
+      - name: Run Static Analysis
+        run: mvn checkstyle:check pmd:check
+
+  # STAGE 2: Security & Vulnerabilities
+  security:
+    name: Security Scan (SpotBugs/Snyk)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up JDK 21
+        uses: actions/setup-java@v5
+        with:
+          java-version: '21'
+          distribution: 'oracle'
+      - name: SpotBugs Scan
+        run: mvn spotbugs:check
+
+  # STAGE 3: Unit & Integration Testing
+  test:
+    name: Unit & Integration Tests
+    needs: [lint, security] # Only runs if Stage 1 & 2 pass
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up JDK 21
+        uses: actions/setup-java@v5
         with:
           java-version: '21'
           distribution: 'oracle'
           cache: 'maven'
 
-      - name: Build and Run Quality Checks
-        run: mvn -B clean verify
+      # Since this is a Kafka Producer, we use verify to trigger integration tests
+      - name: Run Tests with JaCoCo
+        run: mvn clean verify
 
-      - name: Upload Analysis Reports
-        if: failure()
-        uses: actions/upload-artifact@v7 # Use v7 to resolve the Node 20 deprecation
+      - name: Upload Coverage Report
+        uses: actions/upload-artifact@v7
         with:
-          name: quality-reports
-          path: |
-            target/checkstyle-result.xml
-            target/pmd.xml
-            target/spotbugsXml.xml
-            target/site/jacoco/
+          name: jacoco-report
+          path: target/site/jacoco/
+
+  # STAGE 4: Package & Artifact Creation
+  package:
+    name: Package JAR
+    needs: [test]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up JDK 21
+        uses: actions/setup-java@v5
+        with:
+          java-version: '21'
+          distribution: 'oracle'
+      - name: Build Final JAR
+        run: mvn package -DskipTests # Tests already passed in Stage 3
+
+      - name: Upload Build Artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: library-events-producer-jar
+          path: target/*.jar
