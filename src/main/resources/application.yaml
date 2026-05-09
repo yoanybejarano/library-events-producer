@@ -5,11 +5,12 @@ spring:
     active: local
   kafka:
     producer:
-      bootstrap-servers: localhost:9092
+#      bootstrap-servers: localhost:9092
+      bootstrap-servers: host.docker.internal:9092
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.apache.kafka.common.serialization.StringSerializer
       properties:
         spring.json.add.type.headers: false
     admin:
       properties:
-        bootstrap.servers: localhost:9092
+        bootstrap-servers: host.docker.internal:9092
