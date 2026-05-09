@@ -1,5 +1,6 @@
 package io.hatefulbug.library.producer.controller;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import io.hatefulbug.library.producer.model.LibraryEvent;
 import io.hatefulbug.library.producer.model.LibraryEventType;
 import io.hatefulbug.library.producer.service.LibraryEventProducer;
@@ -19,14 +20,14 @@ public class LibraryEventController {
     private final LibraryEventProducer libraryEventProducer;
 
     @PostMapping("/v1/libraryevent")
-    public ResponseEntity<LibraryEvent> postLibraryEvent(@RequestBody @Validated LibraryEvent libraryEvent) {
+    public ResponseEntity<LibraryEvent> postLibraryEvent(@RequestBody @Validated LibraryEvent libraryEvent) throws JsonProcessingException {
         libraryEvent.setLibraryEventType(LibraryEventType.NEW);
         libraryEventProducer.sendLibraryEvent_Approach2(libraryEvent);
         return ResponseEntity.status(HttpStatus.CREATED).body(libraryEvent);
     }
 
     @PutMapping("/v1/libraryevent")
-    public ResponseEntity<?> putLibraryEvent(@RequestBody @Validated LibraryEvent libraryEvent) {
+    public ResponseEntity<?> putLibraryEvent(@RequestBody @Validated LibraryEvent libraryEvent) throws JsonProcessingException {
         if (libraryEvent.getLibraryEventId() == null) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Please provide libraryEventId");
         }

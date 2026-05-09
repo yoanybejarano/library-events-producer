@@ -7,10 +7,9 @@ spring:
     producer:
       bootstrap-servers: localhost:9092
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
-      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
       properties:
-        # This helps the consumer know what class it's looking at
-        spring.json.add.type.headers: true
+        spring.json.add.type.headers: false
     admin:
       properties:
         bootstrap.servers: localhost:9092

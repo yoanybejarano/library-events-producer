@@ -1,5 +1,7 @@
 package io.hatefulbug.library.producer.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.hatefulbug.library.producer.model.LibraryEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,31 +26,34 @@ import static io.hatefulbug.library.producer.util.TopicsRepo.LIBRARY_TOPIC;
 @RequiredArgsConstructor
 public class LibraryEventProducer {
 
-    private final KafkaTemplate<String, LibraryEvent> kafkaTemplate;
+    private final KafkaTemplate<String, String> kafkaTemplate;
+    private final ObjectMapper objectMapper;
 
-    public void sendLibraryEvent(LibraryEvent libraryEvent) {
+    public void sendLibraryEvent(LibraryEvent libraryEvent) throws JsonProcessingException {
         if (libraryEvent.getLibraryEventId() == null) {
             libraryEvent.setLibraryEventId(UUID.randomUUID());
         }
         String key = libraryEvent.getLibraryEventId().toString();
-        CompletableFuture<SendResult<String, LibraryEvent>> completableFuture = kafkaTemplate.send(LIBRARY_TOPIC, key, libraryEvent);
+        String value = objectMapper.writeValueAsString(libraryEvent);
+        CompletableFuture<SendResult<String, String>> completableFuture = kafkaTemplate.send(LIBRARY_TOPIC, key, value);
         completableFuture.whenComplete((result, ex) -> {
             if (ex != null) {
                 handleFailure(ex);
             } else {
-                handleSuccess(key, libraryEvent, result);
+                handleSuccess(key, value, result);
             }
         });
     }
 
-    public SendResult<String, LibraryEvent> sendLibraryEventSynchronous(LibraryEvent libraryEvent) throws ExecutionException, InterruptedException, TimeoutException {
+    public SendResult<String, String> sendLibraryEventSynchronous(LibraryEvent libraryEvent) throws ExecutionException, InterruptedException, TimeoutException, JsonProcessingException {
         if (libraryEvent.getLibraryEventId() == null) {
             libraryEvent.setLibraryEventId(UUID.randomUUID());
         }
         String key = libraryEvent.getLibraryEventId().toString();
-        SendResult<String, LibraryEvent> sendResult = null;
+        String value = objectMapper.writeValueAsString(libraryEvent);
+        SendResult<String, String> sendResult = null;
         try {
-            sendResult = kafkaTemplate.send(LIBRARY_TOPIC, key, libraryEvent).get(1, TimeUnit.SECONDS);
+            sendResult = kafkaTemplate.send(LIBRARY_TOPIC, key, value).get(1, TimeUnit.SECONDS);
         } catch (ExecutionException | InterruptedException e) {
             log.error("ExecutionException/InterruptedException Sending the Message and the exception is {}", e.getMessage());
             throw e;
@@ -59,19 +64,20 @@ public class LibraryEventProducer {
         return sendResult;
     }
 
-    public CompletableFuture<SendResult<String, LibraryEvent>> sendLibraryEvent_Approach2(LibraryEvent libraryEvent) {
+    public CompletableFuture<SendResult<String, String>> sendLibraryEvent_Approach2(LibraryEvent libraryEvent) throws JsonProcessingException {
 
         if (libraryEvent.getLibraryEventId() == null) {
             libraryEvent.setLibraryEventId(UUID.randomUUID());
         }
-        String key = libraryEvent.getLibraryEventId().toString();
-        ProducerRecord<String, LibraryEvent> producerRecord = buildProducerRecord(key, libraryEvent, LIBRARY_TOPIC);
-        CompletableFuture<SendResult<String, LibraryEvent>> completableFuture =  kafkaTemplate.send(producerRecord);
+        String key = objectMapper.writeValueAsString(libraryEvent);
+        String value = objectMapper.writeValueAsString(libraryEvent);
+        ProducerRecord<String, String> producerRecord = buildProducerRecord(key, value, LIBRARY_TOPIC);
+        CompletableFuture<SendResult<String, String>> completableFuture =  kafkaTemplate.send(producerRecord);
         completableFuture.whenComplete((result, ex) -> {
             if (ex != null) {
                 handleFailure(ex);
             } else {
-                handleSuccess(key, libraryEvent, result);
+                handleSuccess(key, value, result);
             }
         });
         return completableFuture;
@@ -87,13 +93,13 @@ public class LibraryEventProducer {
         }
     }
 
-    private void handleSuccess(String key, LibraryEvent libraryEvent, SendResult<String, LibraryEvent> result) {
-        log.info("Message Sent SuccessFully for the key : {} and the value id is {} , partition is {}", key, libraryEvent.getLibraryEventId(), result.getRecordMetadata().partition());
+    private void handleSuccess(String key, String value, SendResult<String, String> result) {
+        log.info("Message Sent SuccessFully for the key : {} and the value id is {} , partition is {}", key, value, result.getRecordMetadata().partition());
     }
 
-    private ProducerRecord<String, LibraryEvent> buildProducerRecord(String key, LibraryEvent libraryEvent, String topic) {
+    private ProducerRecord<String, String> buildProducerRecord(String key, String value, String topic) {
         List<Header> recordHeaders = List.of(new RecordHeader("event-source", "scanner".getBytes()));
-        return new ProducerRecord<>(topic, null, key, libraryEvent, recordHeaders);
+        return new ProducerRecord<>(topic, null, key, value, recordHeaders);
     }
 
 }

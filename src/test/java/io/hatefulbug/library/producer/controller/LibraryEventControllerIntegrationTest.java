@@ -1,5 +1,6 @@
 package io.hatefulbug.library.producer.controller;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.hatefulbug.library.producer.model.Book;
 import io.hatefulbug.library.producer.model.LibraryEvent;
 import io.hatefulbug.library.producer.model.LibraryEventType;
@@ -39,25 +40,41 @@ class LibraryEventControllerIntegrationTest {
 
     @Autowired
     TestRestTemplate restTemplate;
+
     @Autowired
     EmbeddedKafkaBroker embeddedKafkaBroker;
 
-    private Consumer<String, LibraryEvent> consumer;
+    @Autowired
+    ObjectMapper objectMapper;
+
+    private Consumer<String, String> consumer;
 
     @BeforeEach
     void setUp() {
-        Map<String, Object> props = new HashMap<>(KafkaTestUtils.consumerProps("group1", "true", embeddedKafkaBroker));
 
-        // ✅ FIX: correct deserializers
-        props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
-        props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, JsonDeserializer.class);
+        Map<String, Object> props =
+                new HashMap<>(
+                        KafkaTestUtils.consumerProps(
+                                "group1",
+                                "true",
+                                embeddedKafkaBroker
+                        )
+                );
 
-        // needed for JSON
-        props.put(JsonDeserializer.TRUSTED_PACKAGES, "*");
-        props.put(JsonDeserializer.VALUE_DEFAULT_TYPE, LibraryEvent.class);
+        props.put(
+                ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG,
+                StringDeserializer.class
+        );
 
+        props.put(
+                ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG,
+                StringDeserializer.class
+        );
 
-        consumer = new DefaultKafkaConsumerFactory<String, LibraryEvent>(props).createConsumer();
+        consumer =
+                new DefaultKafkaConsumerFactory<String, String>(props)
+                        .createConsumer();
+
         embeddedKafkaBroker.consumeFromAllEmbeddedTopics(consumer);
     }
 
@@ -67,11 +84,12 @@ class LibraryEventControllerIntegrationTest {
     }
 
     @Test
-    void postLibraryEvent() {
-        //given
+    void postLibraryEvent() throws Exception {
+
+        // given
         Book book = Book.builder()
                 .bookId(UUID.randomUUID())
-                .title("The shadow over Innsmouth")
+                .title("The Shadow over Innsmouth")
                 .author("H.P. Lovecraft")
                 .build();
 
@@ -83,25 +101,54 @@ class LibraryEventControllerIntegrationTest {
 
         HttpHeaders headers = new HttpHeaders();
         headers.set(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE);
-        HttpEntity<LibraryEvent> httpEntity = new HttpEntity<>(libraryEvent, headers);
 
-        ResponseEntity<LibraryEvent> responseEntity = restTemplate.exchange("/v1/libraryevent", HttpMethod.POST,  httpEntity, LibraryEvent.class);
+        HttpEntity<LibraryEvent> httpEntity =
+                new HttpEntity<>(libraryEvent, headers);
 
+        // when
+        ResponseEntity<LibraryEvent> responseEntity =
+                restTemplate.exchange(
+                        "/v1/libraryevent",
+                        HttpMethod.POST,
+                        httpEntity,
+                        LibraryEvent.class
+                );
+
+        // then
         assertEquals(HttpStatus.CREATED, responseEntity.getStatusCode());
+
         assertNotNull(responseEntity.getBody());
         assertNotNull(responseEntity.getBody().getLibraryEventId());
 
-        ConsumerRecord<String, LibraryEvent> consumerRecord = KafkaTestUtils.getSingleRecord(consumer, LIBRARY_TOPIC);
-        LibraryEvent publishedEvent = consumerRecord.value();
+        ConsumerRecord<String, String> consumerRecord =
+                KafkaTestUtils.getSingleRecord(consumer, LIBRARY_TOPIC);
+
+        assertNotNull(consumerRecord);
+
+        // FIX: deserialize JSON String into LibraryEvent
+        LibraryEvent publishedEvent =
+                objectMapper.readValue(
+                        consumerRecord.value(),
+                        LibraryEvent.class
+                );
 
         assertNotNull(publishedEvent);
         assertNotNull(publishedEvent.getLibraryEventId());
         assertNotNull(publishedEvent.getLibraryEventType());
 
-        assertEquals(book.getBookId(), publishedEvent.getBook().getBookId());
-        assertEquals(book.getTitle(), publishedEvent.getBook().getTitle());
-        assertEquals(book.getAuthor(), publishedEvent.getBook().getAuthor());
+        assertEquals(
+                book.getBookId(),
+                publishedEvent.getBook().getBookId()
+        );
 
+        assertEquals(
+                book.getTitle(),
+                publishedEvent.getBook().getTitle()
+        );
+
+        assertEquals(
+                book.getAuthor(),
+                publishedEvent.getBook().getAuthor()
+        );
     }
-
 }
