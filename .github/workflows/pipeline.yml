@@ -109,7 +109,7 @@ jobs:
   docker:
     name: Build Docker Image (Local)
     needs: [ package ]
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
 
     steps:
       - name: Checkout Repository
