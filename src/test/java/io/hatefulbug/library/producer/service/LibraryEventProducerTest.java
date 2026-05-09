@@ -3,7 +3,6 @@ package io.hatefulbug.library.producer.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.hatefulbug.library.producer.model.Book;
 import io.hatefulbug.library.producer.model.LibraryEvent;
-import io.hatefulbug.library.producer.model.LibraryEventType;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.clients.producer.RecordMetadata;
 import org.junit.jupiter.api.BeforeEach;
@@ -32,7 +31,7 @@ class LibraryEventProducerTest {
     LibraryEventProducer libraryEventProducer;
 
     @Mock
-    KafkaTemplate<String, LibraryEvent> kafkaTemplate;
+    KafkaTemplate<String, String> kafkaTemplate;
 
     @Spy
     ObjectMapper objectMapper;
@@ -42,16 +41,14 @@ class LibraryEventProducerTest {
 
     @BeforeEach
     void setUp() {
-
         book = Book.builder()
                 .bookId(UUID.randomUUID())
-                .title("The Shadow over Innsmouth")
-                .author("H.P. Lovecraft")
+                .title("Kafka using Spring Boot")
+                .author("Yoany")
                 .build();
 
         libraryEvent = LibraryEvent.builder()
                 .libraryEventId(UUID.randomUUID())
-                .libraryEventType(LibraryEventType.NEW)
                 .book(book)
                 .build();
     }
@@ -59,7 +56,8 @@ class LibraryEventProducerTest {
     @Test
     void sendLibraryEvent_Approach2_failure() {
 
-        CompletableFuture<SendResult<String, LibraryEvent>> completableFuture =
+        // given
+        CompletableFuture<SendResult<String, String>> completableFuture =
                 new CompletableFuture<>();
 
         RuntimeException exception = new RuntimeException("Kafka failure");
@@ -69,6 +67,7 @@ class LibraryEventProducerTest {
         when(kafkaTemplate.send(any(ProducerRecord.class)))
                 .thenReturn(completableFuture);
 
+        // when + then
         ExecutionException executionException = assertThrows(
                 ExecutionException.class,
                 () -> libraryEventProducer
@@ -76,53 +75,58 @@ class LibraryEventProducerTest {
                         .get()
         );
 
-        assertEquals("Kafka failure",
-                executionException.getCause().getMessage());
+        assertEquals(
+                "Kafka failure",
+                executionException.getCause().getMessage()
+        );
 
         verify(kafkaTemplate, times(1))
                 .send(any(ProducerRecord.class));
     }
 
     @Test
-    void sendLibraryEvent_Approach2() {
+    void sendLibraryEvent_Approach2() throws Exception {
 
-        //given
-        String key = libraryEvent.getLibraryEventId().toString();
+        // given
+        String value = objectMapper.writeValueAsString(libraryEvent);
 
         RecordMetadata recordMetadata = mock(RecordMetadata.class);
 
-        SendResult<String, LibraryEvent> sendResult =
+        SendResult<String, String> sendResult =
                 new SendResult<>(
-                        new ProducerRecord<>(LIBRARY_TOPIC, key, libraryEvent),
+                        new ProducerRecord<>(LIBRARY_TOPIC, value, value),
                         recordMetadata
                 );
 
-        CompletableFuture<SendResult<String, LibraryEvent>> completableFuture =
+        CompletableFuture<SendResult<String, String>> completableFuture =
                 CompletableFuture.completedFuture(sendResult);
 
         when(kafkaTemplate.send(any(ProducerRecord.class)))
                 .thenReturn(completableFuture);
 
-        //when
-        CompletableFuture<SendResult<String, LibraryEvent>> result =
+        // when
+        CompletableFuture<SendResult<String, String>> result =
                 libraryEventProducer.sendLibraryEvent_Approach2(libraryEvent);
 
-        //then
+        // then
         assertNotNull(result);
 
         verify(kafkaTemplate, times(1))
                 .send(any(ProducerRecord.class));
 
-        ArgumentCaptor<ProducerRecord<String, LibraryEvent>> captor =
+        ArgumentCaptor<ProducerRecord<String, String>> captor =
                 ArgumentCaptor.forClass(ProducerRecord.class);
 
         verify(kafkaTemplate).send(captor.capture());
 
-        ProducerRecord<String, LibraryEvent> producerRecord = captor.getValue();
+        ProducerRecord<String, String> producerRecord = captor.getValue();
 
         assertEquals(LIBRARY_TOPIC, producerRecord.topic());
-        assertEquals(key, producerRecord.key());
-        assertEquals(libraryEvent, producerRecord.value());
 
+        // key is serialized libraryEvent in your implementation
+        assertEquals(value, producerRecord.key());
+
+        // value is serialized libraryEvent
+        assertEquals(value, producerRecord.value());
     }
 }
