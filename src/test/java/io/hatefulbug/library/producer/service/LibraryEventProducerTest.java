@@ -5,6 +5,7 @@ import io.hatefulbug.library.producer.model.Book;
 import io.hatefulbug.library.producer.model.LibraryEvent;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.clients.producer.RecordMetadata;
+import org.apache.kafka.common.header.Header;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -88,13 +89,15 @@ class LibraryEventProducerTest {
     void sendLibraryEvent_Approach2() throws Exception {
 
         // given
+        String key = libraryEvent.getLibraryEventId().toString();
+
         String value = objectMapper.writeValueAsString(libraryEvent);
 
         RecordMetadata recordMetadata = mock(RecordMetadata.class);
 
         SendResult<String, String> sendResult =
                 new SendResult<>(
-                        new ProducerRecord<>(LIBRARY_TOPIC, value, value),
+                        new ProducerRecord<>(LIBRARY_TOPIC, key, value),
                         recordMetadata
                 );
 
@@ -123,10 +126,21 @@ class LibraryEventProducerTest {
 
         assertEquals(LIBRARY_TOPIC, producerRecord.topic());
 
-        // key is serialized libraryEvent in your implementation
-        assertEquals(value, producerRecord.key());
+        // key should now be UUID string
+        assertEquals(key, producerRecord.key());
 
-        // value is serialized libraryEvent
+        // value should be serialized JSON
         assertEquals(value, producerRecord.value());
+
+        // optional: verify custom header
+        Header header = producerRecord.headers()
+                .lastHeader("event-source");
+
+        assertNotNull(header);
+
+        assertEquals(
+                "scanner",
+                new String(header.value())
+        );
     }
 }
