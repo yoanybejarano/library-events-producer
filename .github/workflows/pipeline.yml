@@ -1,4 +1,4 @@
-name: Enterprise Java CI/CD
+name: Library Event Producer CI/CD
 
 on:
   push:
