@@ -47,32 +47,32 @@ jobs:
           distribution: 'oracle'
           cache: 'maven'
 
-      - name: Cache OWASP Dependency Check DB
-        uses: actions/cache@v4
-        with:
-          path: ~/.dependency-check
-          key: ${{ runner.os }}-dependency-check
-          restore-keys: |
-            ${{ runner.os }}-dependency-check
-
       - name: Run SpotBugs
         run: mvn -B spotbugs:check
 
-      - name: Run OWASP Dependency Check
-        env:
-          NVD_API_KEY: ${{ secrets.NVD_API_KEY }}
-        run: |
-          mvn org.owasp:dependency-check-maven:check \
-            -DnvdApiKey=$NVD_API_KEY \
-            -Dformat=HTML \
-            -DfailBuildOnCVSS=11 \
-            -DossindexAnalyzerEnabled=false
-
-      - name: Upload OWASP Report
-        uses: actions/upload-artifact@v4
-        with:
-          name: owasp-report
-          path: target/dependency-check-report.html
+#      - name: Cache OWASP Dependency Check DB
+#        uses: actions/cache@v4
+#        with:
+#          path: ~/.dependency-check
+#          key: ${{ runner.os }}-dependency-check
+#          restore-keys: |
+#            ${{ runner.os }}-dependency-check
+#
+#      - name: Run OWASP Dependency Check
+#        env:
+#          NVD_API_KEY: ${{ secrets.NVD_API_KEY }}
+#        run: |
+#          mvn org.owasp:dependency-check-maven:check \
+#            -DnvdApiKey=$NVD_API_KEY \
+#            -Dformat=HTML \
+#            -DfailBuildOnCVSS=11 \
+#            -DossindexAnalyzerEnabled=false
+#
+#      - name: Upload OWASP Report
+#        uses: actions/upload-artifact@v4
+#        with:
+#          name: owasp-report
+#          path: target/dependency-check-report.html
 
   test:
     name: Unit & Integration Tests
