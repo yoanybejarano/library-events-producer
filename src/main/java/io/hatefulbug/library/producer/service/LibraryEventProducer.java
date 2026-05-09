@@ -69,7 +69,7 @@ public class LibraryEventProducer {
         if (libraryEvent.getLibraryEventId() == null) {
             libraryEvent.setLibraryEventId(UUID.randomUUID());
         }
-        String key = objectMapper.writeValueAsString(libraryEvent);
+        String key = libraryEvent.getLibraryEventId().toString();
         String value = objectMapper.writeValueAsString(libraryEvent);
         ProducerRecord<String, String> producerRecord = buildProducerRecord(key, value, LIBRARY_TOPIC);
         CompletableFuture<SendResult<String, String>> completableFuture =  kafkaTemplate.send(producerRecord);
