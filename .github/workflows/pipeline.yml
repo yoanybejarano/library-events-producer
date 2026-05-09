@@ -105,6 +105,7 @@ jobs:
         with:
           name: spring-boot-jar
           path: target/*.jar
+
   docker:
     name: Build Docker Image (Local)
     needs: [ package ]
