@@ -4,13 +4,14 @@ spring:
   profiles:
     active: local
   kafka:
+    template:
+      default-topic: library_events
     producer:
-#      bootstrap-servers: localhost:9092
-      bootstrap-servers: kafka:9092
+      bootstrap-servers: localhost:9092
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.apache.kafka.common.serialization.StringSerializer
       properties:
         spring.json.add.type.headers: false
     admin:
       properties:
-        bootstrap-servers: kafka:9092
+        bootstrap-servers: localhost:9092
